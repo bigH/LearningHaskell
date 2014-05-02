@@ -1,5 +1,8 @@
 module H99 where
 
+import Data.List
+import Data.Function
+
 -- 1
 myLast :: [a] -> a
 myLast [] = error "Nothing in list"
@@ -180,19 +183,111 @@ combinationTuples i xs = [ (combo, [ x | x <- xs, x `notElem` combo ]) |
                            combo <- combinations i xs ]
 
 -- 27
-group :: Eq a => [Integer] -> [a] -> [[[a]]]
-group [] _ = []
-group _ [] = []
-group (_:[]) xs = [[xs]]
-group (l:ls) xs = [ fst combos : otherCombos |
+myGroup :: Eq a => [Integer] -> [a] -> [[[a]]]
+myGroup [] _ = []
+myGroup _ [] = []
+myGroup (_:[]) xs = [[xs]]
+myGroup (l:ls) xs = [ fst combos : otherCombos |
                     combos <- combinationTuples l xs,
-                    otherCombos <- group ls (snd combos) ]
+                    otherCombos <- myGroup ls (snd combos) ]
 
 -- 28
 lsort :: [[a]] -> [[a]]
 lsort [] = []
 lsort (x:xs) = smaller ++ [x] ++ larger
   where smaller = lsort [ y | y <- xs, myLength y <= myLength x ]
-        larger = lsort [ y | y <- xs, myLength y >= myLength x ]
+        larger = lsort [ y | y <- xs, myLength y > myLength x ]
 
+reduce :: ([a] -> [a] -> [a]) -> [[a]] -> [a]
+reduce f = foldl f []
 
+lfsort :: [[a]] -> [[a]]
+lfsort = reduce (++) . lsort . groupBy ((==) `on` myLength) . lsort
+
+-- 31
+isPrime :: Integer -> Bool
+isPrime 1 = False
+isPrime 2 = True
+isPrime x
+  | x <= 0    = error "Positive Only"
+  | otherwise = all ((/= 0) . (x `mod`)) [2 .. x-1]
+
+-- 32
+myGCD :: Integer -> Integer -> Integer
+myGCD x y = product $ factorsX `intersect` factorsY
+            where primeFactors' j = [i | i <- [1..j], isPrime i, j `mod` i == 0]
+                  factorsX = primeFactors' x
+                  factorsY = primeFactors' y
+
+-- 33
+coprime :: Integer -> Integer -> Bool
+coprime x y = 1 == myGCD x y
+
+-- 34
+toitent :: Integer -> Integer
+toitent 1 = 1
+toitent m = sum [1 | x <- [1 .. m-1], coprime m x ]
+
+-- 35
+primeFactors :: Integer -> [Integer]
+primeFactors 1 = []
+primeFactors x
+  | isPrime x = [x]
+  | otherwise = firstFactor : primeFactors (x `quot` firstFactor) 
+  where firstFactor = head [ y | y <- [2 .. x-1], isPrime y, x `mod` y == 0 ]
+
+-- 36
+primeFactorsEncoded :: Integer -> [(Integer, Integer)]
+primeFactorsEncoded = encode . primeFactors
+
+-- 37
+toitent' :: Integer -> Integer
+toitent' = product . map (\ (m, p) -> (p - 1) * p ^ (m - 1)) . primeFactorsEncoded
+
+-- 39
+primesR :: Integer -> Integer -> [Integer]
+primesR x y = [i | i <- [x .. y], isPrime i]
+
+-- 40
+goldbach :: Integer -> (Integer, Integer)
+goldbach x
+  | x `mod` 2 == 1 = error "Only even numbers work."
+  | otherwise      = findPairThatSumsTo x (primesR 2 x)
+    where findPairThatSumsTo :: Integer -> [Integer] -> (Integer, Integer)
+          findPairThatSumsTo _ [] = error "Did not find matching pair."
+          findPairThatSumsTo s ps@(p:prest)
+            | (s - p) `elem` ps = (p, s - p)
+            | otherwise         = findPairThatSumsTo s prest
+
+-- 41
+goldbachRange :: Integer -> Integer -> [(Integer, Integer)]
+goldbachRange x y = [ goldbach i | i <- [x .. y], i `mod` 2 == 0 ]
+
+and' :: Bool -> Bool -> Bool
+and' True True = True
+and' _ _ = False
+
+equ' :: Bool -> Bool -> Bool
+equ' True True = True
+equ' False False = True
+equ' _ _ = False
+
+or' :: Bool -> Bool -> Bool
+or' True _ = True
+or' _ True = True
+or' _ _ = False
+
+-- 46
+table :: (Bool -> Bool -> Bool) -> [[Bool]]
+table f = [ [x, y, f x y] | x <- [True, False], y <- [True, False] ]
+
+perms :: [a] -> Integer -> [[a]]
+perms _ 0 = [[]]
+perms choices i = [ choice : perm | choice <- choices, perm <- perms choices (i-1) ]
+
+-- 48
+tablen :: Integer -> ([Bool] -> Bool) -> [[Bool]]
+tablen 0 _ = []
+tablen c f = [ permutation ++ [f permutation] | permutation <- perms [True, False] c ]
+
+-- 49
