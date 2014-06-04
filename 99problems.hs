@@ -291,3 +291,82 @@ tablen 0 _ = []
 tablen c f = [ permutation ++ [f permutation] | permutation <- perms [True, False] c ]
 
 -- 49
+gray :: Integer -> [String]
+gray 1 = ["0", "1"]
+gray n = let other = gray (n - 1)
+             len = myLength other
+             otherDoubled = other ++ myReverse other
+             grayCloned = repli (gray 1) len
+         in zipWith (++) grayCloned otherDoubled
+
+
+data Tree a = Empty | Branch a (Tree a) (Tree a)
+              deriving (Show, Eq)
+
+instance Functor Tree where 
+  fmap _ Empty = Empty
+  fmap f (Branch x left right) = Branch (f x) (fmap f left) (fmap f right)
+
+-- 50
+
+
+-- 55
+completeBalance :: a -> Integer -> [Tree a]
+completeBalance _ 0 = [Empty]
+completeBalance a n =
+  let (q, r) = (n - 1) `quotRem` 2
+  in [Branch a left right | l <- [q .. q + r],
+                            left <- completeBalance a l,
+                            right <- completeBalance a (n - 1 - l) ]
+
+-- 56
+-- mirror helper
+mirror :: Tree a -> Tree a -> Bool
+mirror Empty Empty = True
+mirror (Branch _ ll lr) (Branch _ rl rr) = mirror ll rl && mirror lr rr
+mirror _ _ = False
+
+symmetric :: Tree a -> Bool
+symmetric Empty = True
+symmetric (Branch _ l r) = mirror l r
+
+-- 57
+buildBTree ::  Ord a => [a] -> Tree a
+buildBTree [] = Empty
+buildBTree (x:rest) = Branch x (buildBTree left) (buildBTree right)
+                      where left = [i | i <- rest, i <= x]
+                            right = [i | i <- rest, i > x]
+
+-- 58
+balancedSymmetric :: a -> Integer -> [Tree a]
+balancedSymmetric a i = filter symmetric $ completeBalance a i
+
+-- 59
+heightBalance :: a -> Integer -> [Tree a]
+heightBalance _ 0 = [Empty]
+heightBalance a 1 = [Branch a Empty Empty]
+heightBalance a n = [Branch a left right
+                    | (leftHeight, rightHeight) <- [(n - 1, n - 1), (n - 2, n - 1), (n - 1, n - 2)]
+                    , left <- heightBalance a leftHeight
+                    , right <- heightBalance a rightHeight ]
+
+-- treeSize
+treeSize :: Tree a -> Integer
+treeSize Empty = 0
+treeSize (Branch _ left right) = 1 + treeSize left + treeSize right
+
+-- quickSort
+quickSort :: Ord a => [a] -> [a]
+quickSort [] = []
+quickSort (a:as) = left ++ [a] ++ right
+  where left = quickSort [x | x <- as, x <= a]
+        right = quickSort [x | x <- as, x > a]
+
+-- 60
+nodeCountBalanced :: a -> Integer -> [Tree a]
+nodeCountBalanced _ 0 = [Empty]
+nodeCountBalanced a 1 = [Branch a Empty Empty]
+
+expectedHeight :: Integer -> Integer
+expectedHeight 0 = 0
+
